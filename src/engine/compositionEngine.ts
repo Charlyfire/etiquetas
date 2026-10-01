@@ -383,6 +383,40 @@ export function packRecordsSmartly(
 ): RecordItem[] {
   if (records.length <= 1) return records;
 
+  // Group records into distinct sets if records repeat (e.g. 1..N, 1..N)
+  const sets: RecordItem[][] = [];
+  let currentSet: RecordItem[] = [];
+
+  for (let i = 0; i < records.length; i++) {
+    const rec = records[i];
+    if (currentSet.length > 0 && rec.listNumber === 1 && currentSet[0].listNumber === 1) {
+      sets.push(currentSet);
+      currentSet = [rec];
+    } else {
+      currentSet.push(rec);
+    }
+  }
+  if (currentSet.length > 0) {
+    sets.push(currentSet);
+  }
+
+  // Pack each set individually to keep sets intact and avoid cross-set scrambling
+  const packedResult: RecordItem[] = [];
+  for (const setRecords of sets) {
+    const packedSet = packSingleSetSmartly(setRecords, template, printableWidthMm);
+    packedResult.push(...packedSet);
+  }
+
+  return packedResult;
+}
+
+function packSingleSetSmartly(
+  records: RecordItem[],
+  template: LabelTemplate,
+  printableWidthMm: number
+): RecordItem[] {
+  if (records.length <= 1) return records;
+
   const unplaced = records.map((r) => ({
     record: r,
     widthMm: estimateRecordWidthMm(template, r),
@@ -399,7 +433,6 @@ export function packRecordsSmartly(
     let currentSum = anchor.widthMm;
 
     while (unplaced.length > 0) {
-      // 1.5mm safety buffer per row so DOM flexbox never wraps unexpectedly
       const remainingW = printableWidthMm - currentSum - 1.5;
       if (remainingW <= 12) break;
 
