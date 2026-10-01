@@ -105,8 +105,8 @@ export const PrintPageSheet: React.FC<PrintPageSheetProps> = ({
   // Exact Label Height from user template config (e.g. 20mm, 25mm)
   const cellHeightMm = Math.max(10, template.heightMm || 20);
 
-  // Maximum rows that fit on page
-  const rows = Math.max(1, Math.floor(printableHeightMm / cellHeightMm));
+  // Maximum rows that fit on page with 2mm safety margin
+  const rows = Math.max(1, Math.floor((printableHeightMm - 2) / cellHeightMm));
 
   // Grid columns and cell width for fixed and auto mode
   const cellWidthMm = Math.max(15, template.widthMm || 60);

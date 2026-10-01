@@ -489,8 +489,8 @@ export function paginateRecordsForSheet(
   const printableHeightMm = paperHeightMm - (marginTopMm + marginBottomMm);
 
   const cellHeightMm = Math.max(10, template.heightMm || 20);
-  // Strictly bound maxRowsPerPage to what fits inside printableHeightMm
-  const maxRowsPerPage = Math.max(1, Math.floor((printableHeightMm + 0.001) / cellHeightMm));
+  // Strictly bound maxRowsPerPage to what fits inside printableHeightMm with a 2mm safety buffer
+  const maxRowsPerPage = Math.max(1, Math.floor((printableHeightMm - 2) / cellHeightMm));
 
   let recordsToProcess = records;
   if (printSettings.smartPacking && template.rectangleMode === 'auto') {
