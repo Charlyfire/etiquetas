@@ -307,9 +307,10 @@ export function estimateRecordWidthMm(template: LabelTemplate, record: RecordIte
   const mainTextConfig = template.elements.mainText;
 
   const nameSplit = parseNameAndInitials(rawName, surnameText, mainTextConfig.surnameDisplayMode || 'outside_initials');
-  const approxCharWidthMm = fontSizePt * 0.38;
+  // Realistic character width for school cursive/handwritten fonts (Massallera) is ~0.46 * fontSizePt
+  const approxCharWidthMm = fontSizePt * 0.46;
   const boxTextWidthMm = Math.max(10, nameSplit.firstName.length * approxCharWidthMm);
-  const outsideInitialsWidthMm = nameSplit.outsideInitials ? (nameSplit.outsideInitials.length * approxCharWidthMm + 2) : 0;
+  const outsideInitialsWidthMm = nameSplit.outsideInitials ? (nameSplit.outsideInitials.length * approxCharWidthMm + 3) : 0;
 
   const nameBoxPaddingLeftMm = mainTextConfig.paddingLeftMm ?? 6;
   const nameBoxPaddingRightMm = mainTextConfig.paddingRightMm ?? 6;
@@ -398,7 +399,8 @@ export function packRecordsSmartly(
     let currentSum = anchor.widthMm;
 
     while (unplaced.length > 0) {
-      const remainingW = printableWidthMm - currentSum;
+      // 1.5mm safety buffer per row so DOM flexbox never wraps unexpectedly
+      const remainingW = printableWidthMm - currentSum - 1.5;
       if (remainingW <= 12) break;
 
       let bestIndex = -1;
@@ -451,10 +453,11 @@ export function paginateRecordsForSheet(
   const marginRightMm = printSettings.marginRightMm ?? 0;
 
   const printableWidthMm = paperWidthMm - (marginLeftMm + marginRightMm);
-  const availableHeightMm = paperHeightMm - marginTopMm - (marginBottomMm > 0 ? marginBottomMm : 0);
+  const printableHeightMm = paperHeightMm - (marginTopMm + marginBottomMm);
 
   const cellHeightMm = Math.max(10, template.heightMm || 20);
-  const maxRowsPerPage = Math.max(1, Math.floor((availableHeightMm + 0.5) / cellHeightMm));
+  // Strictly bound maxRowsPerPage to what fits inside printableHeightMm
+  const maxRowsPerPage = Math.max(1, Math.floor((printableHeightMm + 0.001) / cellHeightMm));
 
   let recordsToProcess = records;
   if (printSettings.smartPacking && template.rectangleMode === 'auto') {
@@ -488,7 +491,8 @@ export function paginateRecordsForSheet(
     const recWidthMm = estimateRecordWidthMm(template, rec);
 
     let willFitCurrentRow = true;
-    if (currentRowWidth > 0 && (currentRowWidth + recWidthMm > printableWidthMm)) {
+    // Leave 1.5mm safety buffer so browser DOM flexbox never wraps earlier than estimated
+    if (currentRowWidth > 0 && (currentRowWidth + recWidthMm > printableWidthMm - 1.5)) {
       willFitCurrentRow = false;
     }
 
